@@ -1,0 +1,2 @@
+- name: pihole
+  src: git+https://git.zotha.de/ansible-roles/pihole.git

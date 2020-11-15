@@ -1,0 +1,37 @@
+#cloud-config
+
+hostname: ${hostname}
+
+network:
+  version: 2
+  ethernets:
+    eth0:
+      match:
+        macaddress: '${mac_address}'
+      dhcp4: true
+%{ for index, port in ports ~}
+    eth${index}:
+      match:
+        macaddress: '${port.mac_address}'
+      addresses:
+        - ${port.fixed_ip.0.ip_address}/${split("/", subnets[index].cidr)[1]}
+%{ endfor ~}
+
+write_files:
+  - path: /opt/pihole-ansible/requirements.yml
+    content: ${requirements}
+    encoding: b64
+  - path: /opt/pihole-ansible/playbook.yml
+    content: ${playbook}
+    encoding: b64
+  - path: /opt/pihole-ansible/vars.yml
+    content: |
+      ${indent(6, custom_config)}
+
+packages:
+  - git
+
+runcmd:
+  - cd /opt/pihole-ansible
+  - ansible-galaxy install -r requirements.yml
+  - ansible-playbook playbook.yml

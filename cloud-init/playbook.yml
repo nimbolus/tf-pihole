@@ -1,0 +1,5 @@
+- hosts: localhost
+  roles:
+    - role: pihole
+  vars_files:
+    - vars.yml
