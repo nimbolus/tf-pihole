@@ -1,6 +1,8 @@
 #cloud-config
 
 hostname: ${hostname}
+# do not resolve hostname to 127.0.0.1, because it's caught up by the DNS service
+manage_etc_hosts: false
 
 network:
   version: 2
@@ -32,6 +34,8 @@ packages:
   - git
 
 runcmd:
+  # set hostname again, because cloud-init cuts the domain part of the hostname
+  - hostnamectl set-hostname ${hostname}
   - cd /opt/pihole-ansible
   - ansible-galaxy install -r requirements.yml
   - ansible-playbook playbook.yml
