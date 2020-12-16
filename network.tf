@@ -3,12 +3,29 @@ data "openstack_networking_network_v2" "pihole" {
   name = var.network
 }
 
-resource "openstack_networking_port_v2" "pihole" {
-  name           = "pihole-${var.name}"
-  network_id     = data.openstack_networking_network_v2.pihole.id
-  admin_state_up = "true"
+data "openstack_networking_subnet_v2" "pihole" {
+  count = var.subnet == null ? 0 : 1
 
-  security_group_ids = [openstack_networking_secgroup_v2.pihole.id]
+  network_id = data.openstack_networking_network_v2.pihole.id
+  name       = var.subnet
+}
+
+resource "openstack_networking_port_v2" "pihole" {
+  name                  = "pihole-${var.name}"
+  network_id            = data.openstack_networking_network_v2.pihole.id
+  admin_state_up        = "true"
+  port_security_enabled = var.port_security_enabled
+  security_group_ids    = var.port_security_enabled ? [openstack_networking_secgroup_v2.pihole.id] : []
+  mac_address           = var.mac_address
+
+  dynamic "fixed_ip" {
+    for_each = data.openstack_networking_subnet_v2.pihole
+
+    content {
+      ip_address = var.fixed_ip_address
+      subnet_id  = data.openstack_networking_subnet_v2.pihole[fixed_ip.key].id
+    }
+  }
 }
 
 # additional interfaces

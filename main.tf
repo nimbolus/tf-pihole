@@ -24,6 +24,7 @@ resource "openstack_compute_instance_v2" "pihole" {
   flavor_id         = data.openstack_compute_flavor_v2.pihole.id
   availability_zone = var.availability_zone
   key_pair          = var.key_pair
+  config_drive      = var.config_drive
 
   network {
     access_network = true
