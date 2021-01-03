@@ -4,20 +4,13 @@ hostname: ${hostname}
 # do not resolve hostname to 127.0.0.1, because it's caught up by the DNS service
 manage_etc_hosts: false
 
-network:
-  version: 2
-  ethernets:
-    eth0:
-      match:
-        macaddress: '${mac_address}'
-      dhcp4: true
-%{ for index, port in ports ~}
-    eth${index}:
-      match:
-        macaddress: '${port.mac_address}'
-      addresses:
-        - ${port.fixed_ip.0.ip_address}/${split("/", subnets[index].cidr)[1]}
-%{ endfor ~}
+fs_setup:
+  - label: pihole-data
+    filesystem: ext4
+    device: /dev/vdb
+
+mounts:
+  - [vdb, /mnt/persistent]
 
 write_files:
   - path: /opt/pihole-ansible/requirements.yml
@@ -27,15 +20,13 @@ write_files:
     content: ${playbook}
     encoding: b64
   - path: /opt/pihole-ansible/vars.yml
+    mode: 0600
     content: |
       ${indent(6, custom_config)}
 
-packages:
-  - git
-
 runcmd:
-  # set hostname again, because cloud-init cuts the domain part of the hostname
-  - hostnamectl set-hostname ${hostname}
+  - mkdir -p /mnt/persistent/etc/pihole
+  - ln -s /mnt/persistent/etc/pihole /etc/pihole
   - cd /opt/pihole-ansible
   - ansible-galaxy install -r requirements.yml
   - ansible-playbook playbook.yml

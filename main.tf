@@ -7,21 +7,17 @@ data "openstack_compute_flavor_v2" "pihole" {
   name = var.flavor
 }
 
-resource "openstack_blockstorage_volume_v3" "root" {
-  name              = "pihole-${var.name}-root"
-  image_id          = data.openstack_images_image_v2.pihole.id
-  size              = 10
+resource "openstack_blockstorage_volume_v3" "data" {
+  name              = "pihole-${var.name}-data"
+  size              = 1
   availability_zone = var.availability_zone
   volume_type       = var.volume_type
-
-  timeouts {
-    create = "60m"
-  }
 }
 
 resource "openstack_compute_instance_v2" "pihole" {
   name              = "pihole-${var.name}"
   flavor_id         = data.openstack_compute_flavor_v2.pihole.id
+  image_id          = data.openstack_images_image_v2.pihole.id
   availability_zone = var.availability_zone
   key_pair          = var.key_pair
   config_drive      = var.config_drive
@@ -39,10 +35,19 @@ resource "openstack_compute_instance_v2" "pihole" {
   }
 
   block_device {
-    delete_on_termination = false
-    uuid                  = openstack_blockstorage_volume_v3.root.id
+    boot_index            = 0
+    uuid                  = data.openstack_images_image_v2.pihole.id
+    delete_on_termination = true
+    destination_type      = "local"
+    source_type           = "image"
+  }
+
+  block_device {
+    boot_index            = -1
+    uuid                  = openstack_blockstorage_volume_v3.data.id
     source_type           = "volume"
     destination_type      = "volume"
+    delete_on_termination = false
   }
 
   user_data = templatefile("${path.module}/cloud-init/cloud-init.yml", {
@@ -50,9 +55,6 @@ resource "openstack_compute_instance_v2" "pihole" {
     requirements  = filebase64("${path.module}/cloud-init/requirements.yml")
     playbook      = filebase64("${path.module}/cloud-init/playbook.yml")
     custom_config = var.custom_config
-    mac_address   = openstack_networking_port_v2.pihole.mac_address
-    subnets       = data.openstack_networking_subnet_v2.extra
-    ports         = openstack_networking_port_v2.extra
   })
 
   metadata = var.instance_metadata

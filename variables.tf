@@ -73,3 +73,8 @@ variable "additional_interfaces" {
     port_security_enabled = bool
   }))
 }
+
+variable "allow_ipv6" {
+  description = "create firewall rules for IPv6 traffic (Attention: This can make the DNS Server publicly available)"
+  default     = false
+}
