@@ -46,7 +46,8 @@ variable "port_security_enabled" {
 }
 
 variable "key_pair" {
-  type = string
+  type    = string
+  default = null
 }
 
 variable "config_drive" {
