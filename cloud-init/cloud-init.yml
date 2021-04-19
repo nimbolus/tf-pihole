@@ -1,8 +1,6 @@
 #cloud-config
 
 hostname: ${hostname}
-# do not resolve hostname to 127.0.0.1, because it's caught up by the DNS service
-manage_etc_hosts: false
 
 fs_setup:
   - label: pihole-data
@@ -24,9 +22,16 @@ write_files:
     content: |
       ${indent(6, custom_config)}
 
+packages:
+  - python3-netaddr
+
 runcmd:
   - mkdir -p /mnt/persistent/etc/pihole
   - ln -s /mnt/persistent/etc/pihole /etc/pihole
   - cd /opt/pihole-ansible
+  - export ANSIBLE_ROLES_PATH=$PWD/roles
+  - export ANSIBLE_COLLECTIONS_PATH=$PWD/collections
+  - mkdir $ANSIBLE_ROLES_PATH $ANSIBLE_COLLECTIONS_PATH
   - ansible-galaxy install -r requirements.yml
+  - ansible-galaxy install -r roles/pihole/requirements.yml
   - ansible-playbook playbook.yml
